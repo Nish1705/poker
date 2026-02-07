@@ -6,12 +6,14 @@ from itertools import combinations
 # PAGE CONFIG
 # =====================================================
 st.set_page_config(
-    page_title="Poker Odds Assistant",
+    page_title="Poker Assistant",
     page_icon="♠️",
-    layout="centered"
+    layout="centered",
+    initial_sidebar_state="collapsed"
+    
 )
 
-st.title("♠️ Live Poker Odds Assistant")
+st.title("♠️ Live Poker Assistant")
 st.caption("Texas Hold’em • Realtime Odds • Nuts • Threat Hands")
 st.markdown("""
 <style>

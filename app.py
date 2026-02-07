@@ -9,16 +9,8 @@ from itertools import combinations
 st.set_page_config(
     page_title="Poker Assistant",
     page_icon="♠️",
-    layout="wide",
+    layout="centered",
     initial_sidebar_state="collapsed"
-    
-)
-st.markdown(
-    """
-    <meta name="viewport"
-          content="width=1200, initial-scale=0.75, maximum-scale=1.0, user-scalable=no">
-    """,
-    unsafe_allow_html=True
 )
 st.title("♠️ Live Poker Assistant")
 col1,col2 = st.columns([3,1])

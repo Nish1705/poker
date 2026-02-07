@@ -23,6 +23,9 @@ with col2:
         help="Select how many opponents you want to simulate against (2-10)"
     )
 st.session_state.num_opponents = st.session_state.num_opponents if "num_opponents" in st.session_state else 2
+if "animate_hand" not in st.session_state:
+    st.session_state.animate_hand = False
+    
 st.markdown("""
 <style>
 @keyframes slideApart {
@@ -185,6 +188,7 @@ def select_player_hand():
 
     if col3.button("✅ Confirm", disabled=len(st.session_state.player_cards) != 2):
         st.session_state.stage = "Flop"
+        st.session_state.animate_hand = True
         st.rerun()
     
 
@@ -231,6 +235,8 @@ def select_board_cards():
             else "River" if st.session_state.stage == "Turn"
             else "Done"
         )
+        st.session_state.animate_hand = True
+
         st.rerun()
 
 # =====================================================
@@ -246,6 +252,7 @@ if not st.session_state.player_cards or st.session_state.stage == "Preflop":
         
 
 elif st.session_state.stage in ["Flop", "Turn", "River"]:
+
     if st.session_state.stage == "Flop":
 
         st.subheader("🌊 Flop")
@@ -406,7 +413,9 @@ def render_card_row(cards, key_prefix):
         label = r + SUITS[s]
         cols[i].button(label, disabled=True, key=f"{key_prefix}_{i}")
 
-def render_hand_as_cards(cards):
+def render_hand_as_cards(cards,animate):
+    animate_css = "animation: slideApart 2s ease-out;" if animate and st.session_state.stage == "PreFlop" else ""
+
     card1, card2 = cards
 
     r1, s1 = Card.int_to_str(card1)
@@ -420,7 +429,7 @@ def render_hand_as_cards(cards):
 
     html = f"""
     <div class='hand'>
-        <div style="display:flex; align-items:center;">
+        <div style="display:flex; align-items:center;gap:50px;">
             <div style="
                 width:60px;
                 height:90px;
@@ -455,7 +464,7 @@ def render_hand_as_cards(cards):
                 font-weight:bold;
                 color:{color2};
                 margin-left:-20px;
-                animation: slideApart 1s ease-out;
+                {animate_css};
             ">
                 <div style="font-size:12px;">{r2}{suit_symbol2}</div>
                 <div style="font-size:26px; text-align:center;">{suit_symbol2}</div>
@@ -467,6 +476,7 @@ def render_hand_as_cards(cards):
 
     st.markdown(html, unsafe_allow_html=True)
 def render_best_5_cards(cards):
+    animate_css = "animation: slideApart 2s ease-out;" if st.session_state.animate_hand else ""
     html = "<div style='display:flex; justify-content:center; gap:10px;'>"
 
     card1, card2, card3, card4, card5 = cards
@@ -527,7 +537,7 @@ def render_best_5_cards(cards):
                 font-weight:bold;
                 color:{color2};
                 margin-left:-20px;
-                animation: slideApart 1s ease-out;
+                {animate_css}
             ">
                 <div style="font-size:12px;">{r2}{suit_symbol2}</div>
                 <div style="font-size:26px; text-align:center;">{suit_symbol2}</div>
@@ -549,7 +559,7 @@ def render_best_5_cards(cards):
                 font-weight:bold;
                 color:{color3};
                 margin-left:-20px;
-                animation: slideApart 1s ease-out;
+                {animate_css}
             ">
                 <div style="font-size:12px;">{r3}{suit_symbol3}</div>
                 <div style="font-size:26px; text-align:center;">{suit_symbol3}</div>
@@ -571,7 +581,7 @@ def render_best_5_cards(cards):
                 font-weight:bold;
                 color:{color4};
                 margin-left:-20px;
-                animation: slideApart 1s ease-out;
+                {animate_css}
             ">
                 <div style="font-size:12px;">{r4}{suit_symbol4}</div>
                 <div style="font-size:26px; text-align:center;">{suit_symbol4}</div>
@@ -593,7 +603,7 @@ def render_best_5_cards(cards):
                 font-weight:bold;
                 color:{color5};
                 margin-left:-20px;
-                animation: slideApart 1s ease-out;
+                {animate_css}
             ">
                 <div style="font-size:12px;">{r5}{suit_symbol5}</div>
                 <div style="font-size:26px; text-align:center;">{suit_symbol5}</div>
@@ -608,6 +618,11 @@ def render_best_5_cards(cards):
 
 
 def render_board_as_cards(cards,player):
+    animate_css1 = "animation: slideApart 2s ease-out;" if st.session_state.animate_hand and len(cards)==3 else ""
+    animate_css2 = "animation: slideApart 2s ease-out;" if st.session_state.animate_hand and len(cards)==4 else ""
+    animate_css3 = "animation: slideApart 2s ease-out;" if st.session_state.animate_hand and len(cards)==5 else ""
+
+
     html = "<div class='table'><div style='display:flex;gap:12px;margin-left:15%;'>"
     try:
 
@@ -633,7 +648,7 @@ def render_board_as_cards(cards,player):
         <div style='display:flex;gap:12px;'>
             <div style="width:60px;height:90px;border-radius:8px;
             background:white;border:1.5px solid #333;padding:4px;
-            font-weight:bold;color:{col2};animation: slideApart 1s ease-out;">
+            font-weight:bold;color:{col2};{animate_css1}">
                 <div style="font-size:12px;">{r2}{SUITS[s2]}</div>
                 <div style="font-size:26px;text-align:center;">{SUITS[s2]}</div>
                 <div style="font-size:12px; text-align:right;">{r2}{SUITS[s2]}</div>
@@ -647,7 +662,7 @@ def render_board_as_cards(cards,player):
         <div style='display:flex;gap:75px;'>
             <div style="width:60px;height:90px;border-radius:8px;
             background:white;border:1.5px solid #333;padding:4px;
-            font-weight:bold;color:{col3};animation: slideApart 1s ease-out;">
+            font-weight:bold;color:{col3};{animate_css1}">
                 <div style="font-size:12px;">{r3}{SUITS[s3]}</div>
                 <div style="font-size:26px;text-align:center;">{SUITS[s3]}</div>
                 <div style="font-size:12px; text-align:right;">{r3}{SUITS[s3]}</div>
@@ -662,7 +677,7 @@ def render_board_as_cards(cards,player):
             <div style='display:flex;gap:75px;'>
                 <div style="width:60px;height:90px;border-radius:8px;
                 background:white;border:1.5px solid #333;padding:4px;
-                font-weight:bold;color:{col4};animation: slideApart 1s ease-out;">
+                font-weight:bold;color:{col4};{animate_css2}">
                     <div style="font-size:12px;">{r4}{SUITS[s4]}</div>
                     <div style="font-size:26px;text-align:center;">{SUITS[s4]}</div>
                     <div style="font-size:12px; text-align:right;">{r4}{SUITS[s4]}</div>
@@ -677,7 +692,7 @@ def render_board_as_cards(cards,player):
             <div style='display:flex;gap:12px;'>
                 <div style="width:60px;height:90px;border-radius:8px;
                 background:white;border:1.5px solid #333;padding:4px;
-                font-weight:bold;color:{col5};animation: slideApart 1s ease-out;">
+                font-weight:bold;color:{col5};{animate_css3}">
                     <div style="font-size:12px;">{r5}{SUITS[s5]}</div>
                     <div style="font-size:26px;text-align:center;">{SUITS[s5]}</div>
                     <div style="font-size:12px; text-align:right;">{r5}{SUITS[s5]}</div>
@@ -731,9 +746,12 @@ def render_table_view(board, hand):
     st.divider()
     if board:
         render_board_as_cards(board,hand)
+        # st.session_state.animate_hand = False
     st.divider()
     if len(hand) == 2:
-        render_hand_as_cards(hand)
+        render_hand_as_cards(hand,st.session_state.animate_hand)
+        # st.session_state.animate_hand = False
+
         if len(board) >= 3:
             hand_name, best_5, rank = get_best_hand(
             st.session_state.player_cards,
@@ -752,6 +770,7 @@ def render_table_view(board, hand):
 # =====================================================
 
 if len(st.session_state.player_cards) == 2:
+
     render_table_view(
         st.session_state.board_cards,
         st.session_state.player_cards
@@ -794,7 +813,8 @@ if len(st.session_state.player_cards) == 2:
             cols = st.columns(3)
             for idx, h in enumerate(nuts[:5]):
                 with cols[idx%3]:
-                    render_hand_as_cards(h)
+                    render_hand_as_cards(h,st.session_state.animate_hand)
+
 
         st.divider()
         st.subheader("💀 Hands That Beat You")
@@ -812,5 +832,6 @@ if len(st.session_state.player_cards) == 2:
                 for i, (opp, _) in enumerate(threats):
                     # st.markdown("• " + " ".join(pretty(c) for c in opp))
                     with cols[i % 3]:
-                        render_hand_as_cards(opp)
+                        render_hand_as_cards(opp,st.session_state.animate_hand)
+        st.session_state.animate_hand = False
                     

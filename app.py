@@ -14,7 +14,16 @@ st.set_page_config(
 )
 
 st.title("♠️ Live Poker Assistant")
-st.caption("Texas Hold’em • Realtime Odds • Nuts • Threat Hands")
+col1,col2 = st.columns([3,1])
+with col1:
+    st.caption("Texas Hold’em")
+with col2:
+    st.selectbox(
+        label="Number of Opponents",
+        options = [i for i in range(2,11)],
+        help="Select how many opponents you want to simulate against (2-10)"
+    )
+st.session_state.num_opponents = st.session_state.num_opponents if "num_opponents" in st.session_state else 2
 st.markdown("""
 <style>
 @keyframes slideApart {
@@ -74,7 +83,18 @@ if "stage" not in st.session_state:
 # =====================================================
 SUITS = {"s": "♠", "h": "♥", "d": "♦", "c": "♣"}
 RANKS = ["A","K","Q","J","T","9","8","7","6","5","4","3","2"]
-
+HAND_RANKS = {
+    0: "Royal Flush",
+    1: "Straight Flush",
+    2: "Four of a Kind",
+    3: "Full House",
+    4: "Flush",
+    5: "Straight",
+    6: "Three of a Kind",
+    7: "Two Pair",
+    8: "One Pair",
+    9: "High Card",
+}
 def pretty(card):
     r, s = Card.int_to_str(card)
     return r + SUITS[s]
@@ -92,7 +112,7 @@ def render_deck_dialog(target_list, max_cards, key_prefix):
                 label = rank + SUITS[suit]
 
                 if card not in st.session_state.available_cards:
-                    cols[i].button("P", disabled=True, key=f"{key_prefix}_{card_str}")
+                    cols[i].button("X", disabled=True, key=f"{key_prefix}_{card_str}")
                 else:
                     if cols[i].button(label, key=f"{key_prefix}_{card_str}"):
                         if len(target_list) < max_cards:
@@ -108,7 +128,7 @@ def render_deck_dialog(target_list, max_cards, key_prefix):
                 label = rank + SUITS[suit]
 
                 if card not in st.session_state.available_cards:
-                    cols[i].button("F", disabled=True, key=f"{key_prefix}_{card_str}")
+                    cols[i].button("X", disabled=True, key=f"{key_prefix}_{card_str}")
                 else:
                     if cols[i].button(label, key=f"{key_prefix}_{card_str}"):
                         if len(target_list) < max_cards:
@@ -124,7 +144,7 @@ def render_deck_dialog(target_list, max_cards, key_prefix):
                 label = rank + SUITS[suit]
 
                 if card not in st.session_state.available_cards:
-                    cols[i].button(" ", disabled=True, key=f"{key_prefix}_{card_str}")
+                    cols[i].button("X", disabled=True, key=f"{key_prefix}_{card_str}")
                 else:
                     if cols[i].button(label,disabled=True, key=f"{key_prefix}_{card_str}"):
                         if len(target_list) < max_cards:
@@ -263,7 +283,61 @@ if st.session_state.stage == "Done":
 # =====================================================
 # MONTE CARLO ODDS (AUTO)
 # =====================================================
-def simulate_odds(player, board, opponents=2, sims=7000):
+def get_best_hand(player_cards, board_cards):
+    """
+    Returns:
+        hand_name (str)
+        best_5_cards (list[int])
+        rank_class (int)
+    """
+    if len(player_cards) != 2:
+        return None, None, None
+
+    cards = player_cards + board_cards
+    if len(cards) < 5:
+        return None, None, None
+
+    score = evaluator.evaluate(board_cards, player_cards)
+    rank_class = evaluator.get_rank_class(score)
+    hand_name = HAND_RANKS[rank_class]
+    # print(hand_name)
+    # Get exact best 5-card hand
+    # best_5_cards = None
+    # best_rank = None
+    # for cardCombo in combinations(cards, 5):
+    #     if best_5_cards is not None:
+    #         score = evaluator.evaluate(board_cards, list(cardCombo))
+    #         rank = evaluator.get_five_card_rank_percentage(score)
+    #         if rank > best_rank:
+    #             best_rank = rank
+    #             best_5_cards = list(cardCombo)
+    #     else:
+    #         best_5_cards = list(cardCombo)
+    #         score = evaluator.evaluate(board_cards, list(cardCombo))
+    #         best_rank = evaluator.get_five_card_rank_percentage(score)
+    # else:
+    #     best_5_cards = None
+    
+    # return hand_name, best_5_cards, rank_class
+    return hand_name, None, rank_class
+def render_hand_strength(hand_name):
+    st.markdown(
+        f"""
+        <div style="
+            text-align:center;
+            font-size:20px;
+            font-weight:700;
+            margin-top:8px;
+            color:#f9f9f9;
+        ">
+            🏆 {hand_name}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+def simulate_odds(player, board, opponents=2, sims=10000):
     wins = ties = losses = 0
 
     for _ in range(sims):
@@ -295,7 +369,7 @@ def simulate_odds(player, board, opponents=2, sims=7000):
 # =====================================================
 def find_nuts(board, player):
     deck = Deck()
-    for c in board:
+    for c in (board+player):
         deck.cards.remove(c)
 
     best = 7462
@@ -389,6 +463,145 @@ def render_hand_as_cards(cards):
                 <div style="font-size:12px; text-align:right;">{r2}{suit_symbol2}</div>
             </div>
         </div>
+    </div>
+    """
+
+    st.markdown(html, unsafe_allow_html=True)
+def render_best_5_cards(cards):
+    html = "<div style='display:flex; justify-content:center; gap:10px;'>"
+
+    card1, card2, card3, card4, card5 = cards
+
+    r1, s1 = Card.int_to_str(card1)
+    r2, s2 = Card.int_to_str(card2)
+    r2, s2 = Card.int_to_str(card2)
+    r3, s3 = Card.int_to_str(card3)
+    r4, s4 = Card.int_to_str(card4)
+    r5, s5 = Card.int_to_str(card5)
+
+    suit_symbol1 = SUITS[s1]
+    suit_symbol2 = SUITS[s2]
+    suit_symbol3 = SUITS[s3]
+    suit_symbol4 = SUITS[s4]
+    suit_symbol5 = SUITS[s5]
+
+    color1 = "red" if s1 in ["h", "d"] else "black"
+    color2 = "red" if s2 in ["h", "d"] else "black"
+    color3 = "red" if s3 in ["h", "d"] else "black"
+    color4 = "red" if s4 in ["h", "d"] else "black"
+    color5 = "red" if s5 in ["h", "d"] else "black"
+
+    html = f"""
+    <div class='hand'>
+        <div style="display:flex; align-items:center;">
+            <div style="
+                width:60px;
+                height:90px;
+                border:1.5px solid #333;
+                border-radius:8px;
+                background:white;
+                box-shadow:2px 2px 6px rgba(0,0,0,0.25);
+                display:flex;
+                flex-direction:column;
+                justify-content:space-between;
+                padding:4px;
+                margin-left:30%;
+                font-weight:bold;
+                color:{color1};
+            ">
+                <div style="font-size:12px;">{r1}{suit_symbol1}</div>
+                <div style="font-size:26px; text-align:center;">{suit_symbol1}</div>
+                <div style="font-size:12px; text-align:right;">{r1}{suit_symbol1}</div>
+            </div>
+        <div style="display:flex; align-items:center;">
+            <div style="
+                width:60px;
+                height:90px;
+                border:1.5px solid #333;
+                border-radius:8px;
+                background:white;
+                box-shadow:2px 2px 6px rgba(0,0,0,0.25);
+                display:flex;
+                flex-direction:column;
+                justify-content:space-between;
+                padding:4px;
+                font-weight:bold;
+                color:{color2};
+                margin-left:-20px;
+                animation: slideApart 1s ease-out;
+            ">
+                <div style="font-size:12px;">{r2}{suit_symbol2}</div>
+                <div style="font-size:26px; text-align:center;">{suit_symbol2}</div>
+                <div style="font-size:12px; text-align:right;">{r2}{suit_symbol2}</div>
+            </div>
+        </div>
+        <div style="display:flex; align-items:center;">
+            <div style="
+                width:60px;
+                height:90px;
+                border:1.5px solid #333;
+                border-radius:8px;
+                background:white;
+                box-shadow:2px 2px 6px rgba(0,0,0,0.25);
+                display:flex;
+                flex-direction:column;
+                justify-content:space-between;
+                padding:4px;
+                font-weight:bold;
+                color:{color3};
+                margin-left:-20px;
+                animation: slideApart 1s ease-out;
+            ">
+                <div style="font-size:12px;">{r3}{suit_symbol3}</div>
+                <div style="font-size:26px; text-align:center;">{suit_symbol3}</div>
+                <div style="font-size:12px; text-align:right;">{r3}{suit_symbol3}</div>
+            </div>
+        </div>
+        <div style="display:flex; align-items:center;">
+            <div style="
+                width:60px;
+                height:90px;
+                border:1.5px solid #333;
+                border-radius:8px;
+                background:white;
+                box-shadow:2px 2px 6px rgba(0,0,0,0.25);
+                display:flex;
+                flex-direction:column;
+                justify-content:space-between;
+                padding:4px;
+                font-weight:bold;
+                color:{color4};
+                margin-left:-20px;
+                animation: slideApart 1s ease-out;
+            ">
+                <div style="font-size:12px;">{r4}{suit_symbol4}</div>
+                <div style="font-size:26px; text-align:center;">{suit_symbol4}</div>
+                <div style="font-size:12px; text-align:right;">{r4}{suit_symbol4}</div>
+            </div>
+        </div>
+        <div style="display:flex; align-items:center;">
+            <div style="
+                width:60px;
+                height:90px;
+                border:1.5px solid #333;
+                border-radius:8px;
+                background:white;
+                box-shadow:2px 2px 6px rgba(0,0,0,0.25);
+                display:flex;
+                flex-direction:column;
+                justify-content:space-between;
+                padding:4px;
+                font-weight:bold;
+                color:{color5};
+                margin-left:-20px;
+                animation: slideApart 1s ease-out;
+            ">
+                <div style="font-size:12px;">{r5}{suit_symbol5}</div>
+                <div style="font-size:26px; text-align:center;">{suit_symbol5}</div>
+                <div style="font-size:12px; text-align:right;">{r5}{suit_symbol5}</div>
+            </div>
+        </div>
+        
     </div>
     """
 
@@ -514,19 +727,31 @@ def render_board_as_cards(cards,player):
 {part4}
 {part5}
     """
-    print(html)
     st.markdown(html, unsafe_allow_html=True)
 def render_table_view(board, hand):
+    st.divider()
     if board:
         render_board_as_cards(board,hand)
-
+    st.divider()
     if len(hand) == 2:
         render_hand_as_cards(hand)
+        if len(board) >= 3:
+            hand_name, best_5, rank = get_best_hand(
+            st.session_state.player_cards,
+            st.session_state.board_cards
+        )
+
+            if hand_name:
+                render_hand_strength(hand_name)
+                # render_best_5_cards(best_5)
+
+    
 
 
 # =====================================================
 # LIVE RESULTS (AUTO UPDATE)
 # =====================================================
+
 if len(st.session_state.player_cards) == 2:
     render_table_view(
         st.session_state.board_cards,
@@ -534,7 +759,8 @@ if len(st.session_state.player_cards) == 2:
     )
     win, tie, lose = simulate_odds(
         st.session_state.player_cards,
-        st.session_state.board_cards
+        st.session_state.board_cards,
+        opponents=st.session_state.num_opponents
     )
 
     st.divider()
@@ -561,14 +787,14 @@ if len(st.session_state.player_cards) == 2:
 
 
         if my_score == best:
-            st.success("YOU HAVE THE NUTS — unbeatable hand")
+            st.success(f"YOU HAVE THE NUTS — Score : {my_score}")
         else:
             st.warning("You do NOT have the nuts (Your Score: " + str(my_score) + " | Best Possible: " + str(best) + ")")
         
             st.markdown("**Unbeatable hands:**")
             cols = st.columns(3)
             for idx, h in enumerate(nuts[:5]):
-                with cols[idx % 3]:
+                with cols[idx%3]:
                     render_hand_as_cards(h)
 
         st.divider()
